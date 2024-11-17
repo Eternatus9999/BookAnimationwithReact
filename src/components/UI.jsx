@@ -79,7 +79,7 @@ export const UI = () => {
         </div>
       </main>
 
-      {/* <div className="fixed inset-0 flex items-center -rotate-2 select-none">
+      <div className="fixed inset-0 flex items-center -rotate-2 select-none">
         <div className="relative">
           <div className="bg-white/0  animate-horizontal-scroll flex items-center gap-8 w-max px-8">
             <h1 className="shrink-0 text-white text-10xl font-black ">
@@ -93,9 +93,6 @@ export const UI = () => {
             </h2>
             <h2 className="shrink-0 text-white text-12xl font-bold">
               Three.js
-            </h2>
-            <h2 className="shrink-0 text-transparent text-12xl font-bold italic outline-text">
-              First
             </h2>
             <h2 className="shrink-0 text-white text-9xl font-extralight italic">
               Project
@@ -117,9 +114,6 @@ export const UI = () => {
             <h2 className="shrink-0 text-white text-12xl font-bold">
               Three.js
             </h2>
-            <h2 className="shrink-0 text-transparent text-12xl font-bold italic outline-text">
-              First
-            </h2>
             <h2 className="shrink-0 text-white text-9xl font-extralight italic">
               Project
             </h2>
@@ -128,7 +122,7 @@ export const UI = () => {
             </h2>
           </div>
         </div>
-      </div> */}
+      </div>
     </>
   );
 };
