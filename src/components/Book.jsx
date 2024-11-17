@@ -8,6 +8,7 @@ import { useAtom } from "jotai";
 import { easing } from "maath";
 
 const easingFactor = 0.5;
+const easingFactorFold = 0.3;
 const insideCurveStrength = 0.18;
 const outsideCurveStrength = 0.05;
 const turningCurveStrength = 0.09;
@@ -84,6 +85,8 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
     ]);
     picture.colorSpace = picture2.colorSpace = SRGBColorSpace;
     const group = useRef();
+    const turnedAt = useRef(0);
+    const lastOpened = useRef(opened);
 
     const skinnedMeshRef = useRef();
 
@@ -118,7 +121,7 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
         new MeshStandardMaterial({
             color: whiteColor,
             map: picture2,
-            ...(number === pageGometry.length -1
+            ...(number === pageGometry.length - 1
                 ? {
                     roughnessMap: pictureRoughness,
                 }
@@ -141,25 +144,40 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
             return;
         }
 
+        if (lastOpened.current !== opened) {
+            turnedAt.current = +new Date();
+            lastOpened.current = opened;
+        }
+
+        let turningTime = Math.min(400, new Date() - turnedAt.current) / 400;
+
+        turningTime = Math.sin(turningTime * Math.PI);
+
         let targetRotation = opened ? -Math.PI / 2 : Math.PI / 2;
+
         if (!bookClosed) {
             targetRotation += degToRad(number * 0.8);
         }
         const bones = skinnedMeshRef.current.skeleton.bones;
         for (let i = 0; i < bones.length; i++) {
-            const target = i ===0 ? group.current : bones[i];
+            const target = i === 0 ? group.current : bones[i];
 
             const insideCurveIntensity = i < 8 ? Math.sin(i * 0.2 + 0.25) : 0;
             const outsideCurveIntensity = i >= 8 ? Math.cos(i * 0.3 + 0.09) : 0;
-            let rotationAngle = 
-            insideCurveStrength * insideCurveIntensity * targetRotation -
-            outsideCurveStrength * outsideCurveIntensity *targetRotation;
-            if(bookClosed){
-                if(i === 0){
+            const turningIntensity =
+                Math.sin(i * Math.PI * (1 / bones.length)) * turningTime;
+            let rotationAngle =
+                insideCurveStrength * insideCurveIntensity * targetRotation -
+                outsideCurveStrength * outsideCurveIntensity * targetRotation +
+                turningCurveStrength * turningIntensity * targetRotation;
+            let foldRotationAngle = degToRad(Math.sign(targetRotation) * 2);
+            if (bookClosed) {
+                if (i === 0) {
                     rotationAngle = targetRotation;
+                    foldRotationAngle =0;
                 }
-                else{
-                    rotationAngle =0;
+                else {
+                    rotationAngle = 0;
                 }
             }
             easing.dampAngle(
@@ -167,6 +185,15 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
                 "y",
                 rotationAngle,
                 easingFactor,
+                delta
+            );
+
+            const foldingIntensity = i > 8 ? Math.sin(i * Math.PI * (1/bones.length) - 0.5) * turningTime : 0;
+            easing.dampAngle(
+                target.rotation,
+                "x",
+                foldRotationAngle * foldingIntensity,
+                easingFactorFold,
                 delta
             );
         }
