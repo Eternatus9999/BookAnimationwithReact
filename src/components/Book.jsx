@@ -81,7 +81,7 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
     const [picture, picture2, pictureRoughness] = useTexture([
         `/textures/${front}.jpg`,
         `/textures/${back}.jpg`,
-        ...(number === 0 || number === pageGometry.length - 1
+        ...(number === 0 || number === pages.length -1
             ? [`/textures/book-cover-roughness.jpg`]
             : [])
     ]);
@@ -125,7 +125,7 @@ const Page = ({ number, front, back, page, opened, bookClosed, ...props }) => {
         new MeshStandardMaterial({
             color: whiteColor,
             map: picture2,
-            ...(number === pageGometry.length - 1
+            ...(number === pages.length - 1
                 ? {
                     roughnessMap: pictureRoughness,
                 }
