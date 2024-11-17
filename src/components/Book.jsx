@@ -1,6 +1,9 @@
 import {useMemo, useRef} from "react";
 import {pages} from "./UI";
-import { Bone, BoxGeometry, Float32BufferAttribute, MeshStandardMaterial, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from "three";
+import { Bone, BoxGeometry, Float32BufferAttribute, MeshStandardMaterial, SkinnedMesh, Skeleton, Uint16BufferAttribute, Vector3, Color, SkeletonHelper, SRGBColorSpace } from "three";
+import { useTexture } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { degToRad } from "three/src/math/MathUtils.js";
 
 const PAGE_WDTH = 1.28;
 const PAGE_HEIGHT = 1.71; //4:3 aspect ratio
@@ -23,7 +26,7 @@ const vertex = new Vector3;
 const skinIndexes = [];
 const skinWeights =[];
 
-for (let i = 0; i < position.count.length; i++) {
+for (let i = 0; i < position.count; i++) {
     vertex.fromBufferAttribute(position, i);
     const x = vertex.x;
 
@@ -42,31 +45,34 @@ pageGometry.setAttribute(
     new Float32BufferAttribute(skinWeights, 4)
 );
 
+const whiteColor =  new Color("white");
 const pageMaterials = [
     new MeshStandardMaterial({
-        color: "white",
+        color: whiteColor,
     }),
     new MeshStandardMaterial({
         color: "#111",
     }),
     new MeshStandardMaterial({
-        color: "white",
+        color: whiteColor,
     }),
     new MeshStandardMaterial({
-        color: "white",
-    }),
-    new MeshStandardMaterial({
-        color: "pink",
-    }),
-    new MeshStandardMaterial({
-        color: "blue",
+        color: whiteColor,
     }),
 ]
 
 const Page = ({number, front, back, ...props}) =>{
+    const[picture, picture2, pictureRoughness] = useTexture([
+        `/textures/${front}.jpg`,
+        `/textures/${back}.jpg`,
+        ...(number === 0 || number === pageGometry.length - 1
+            ? [`/textures/book-cover-roughness.jpg`]
+            : [])
+    ]);
+    picture.colorSpace = picture2.colorSpace = SRGBColorSpace;
     const group = useRef();
 
-    const SkinnedMesh = useRef();
+    const skinnedMeshRef = useRef();
 
     const manualSkinnedMesh = useMemo(()=>{
         const bones = [];
@@ -84,7 +90,30 @@ const Page = ({number, front, back, ...props}) =>{
         }
         const skeleton = new Skeleton(bones);
 
-        const materials = pageMaterials;
+        const materials = [...pageMaterials,
+            new MeshStandardMaterial({
+                color: whiteColor,
+                map: picture,
+                ...(number === 0
+                    ?{
+                        roughnessMap: pictureRoughness,
+                    }
+                    :{
+                        roughness: 0.1
+                    }),
+            }),
+            new MeshStandardMaterial({
+                color: "grey",
+                map: picture2,
+                ...(number === pageGometry.length-1
+                    ?{
+                        roughnessMap: pictureRoughness,
+                    }
+                    :{
+                        roughness: 0.1
+                    }),
+            })
+        ];
         const mesh = new SkinnedMesh(pageGometry, materials);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -94,17 +123,23 @@ const Page = ({number, front, back, ...props}) =>{
         return mesh;
     }, []);
 
+    useFrame(() =>{
+        if(!skinnedMeshRef.current){
+            return;
+        }
+        // const bones = skinnedMeshRef.current.skeleton.bones;
 
-    return (<group {...props} ref={(group)}>
-        <mesh scale={0.1}>
-            <primitive object={pageGometry} attach={"geometry"}/>
-            <meshBasicMaterial color="red" />
-        </mesh>
+    })
+
+    return (
+    <group {...props} ref={(group)}>
+        <primitive object={manualSkinnedMesh} ref={skinnedMeshRef} />
     </group>)
 }
 
 export const Book = ({...props}) =>{
-    return (<group {...props}>
+    return (
+    <group {...props}>
         {
             [...pages].map((pageData,index) => 
                 index === 0 ?(
